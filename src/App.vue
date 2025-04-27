@@ -1,7 +1,7 @@
 <template>
   <div id="app" class="flex flex-col items-center gap-11 bg-partner-color px-5 py-11">
     <div>
-      <img class="max-w-52" src="./public/thirsty.png" />
+      <img class="max-w-52 logo-animation" src="./public/thirsty.png" alt="Thirsty Logo" />
     </div>
     <MyForm />
   </div>
@@ -18,3 +18,22 @@ export default defineComponent({
   }
 })
 </script>
+
+<style>
+.logo-animation {
+  animation: pulse 2s infinite ease-in-out;
+  transform-origin: center;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+</style>
