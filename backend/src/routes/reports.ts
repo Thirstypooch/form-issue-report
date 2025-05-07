@@ -12,66 +12,108 @@ type ReportEnv = {
 export const reportsRouter = new Hono<ReportEnv>();
 
 reportsRouter.post('/', async (c) => {
-  const body = await c.req.parseBody();
-  const validation = reportSchema.safeParse(body);
-
-  if (!validation.success) {
-    return c.json({ error: validation.error.errors }, 400);
-  }
-
-  const reportData = validation.data;
-
-  // Handle file uploads with compression
-  const files = body['screenshots'] as File[] | undefined;
-  const fileUrls: string[] = [];
-
-  if (files && files.length > 0) {
-    for (const file of files) {
-      // Check file size (limit to 10MB for example)
-      if (file.size > 10 * 1024 * 1024) {
-        return c.json({ error: "File size exceeds 10MB limit" }, 400);
-      }
-      try {
-        let processedFile = file;
+  try {
+    console.log("Received request");
+    const body = await c.req.parseBody();
+    console.log("Parsed body:", body);
+    
+    const validation = reportSchema.safeParse(body);
+    if (!validation.success) {
+      console.error("Validation error:", validation.error.errors);
+      return c.json({ error: validation.error.errors }, 400);
+    }
+    
+    console.log("Validation successful");
+    const reportData = validation.data;
+    
+    // Handle file uploads
+    const files = body['screenshots'] as File[] | undefined;
+    const fileUrls: string[] = [];
+    
+    if (files && files.length > 0) {
+      console.log(`Processing ${files.length} files`);
+      
+      for (const file of files) {
+        console.log(`Processing file: ${file.name}, type: ${file.type}, size: ${file.size}`);
         
-        // Handle image compression
-        if (file.type.startsWith('image/')) {
-          const arrayBuffer = await file.arrayBuffer();
-          const compressedBuffer = await gzip(new Uint8Array(arrayBuffer));
+        if (file.size > 10 * 1024 * 1024) {
+          return c.json({ error: "File size exceeds 10MB limit" }, 400);
+        }
+        
+        try {
+          let processedFile = file;
           
-          processedFile = new File([compressedBuffer], file.name + '.gz', {
-            type: 'application/gzip'
-          });
-        }
-        
-        // Handle video compression (basic settings)
-        if (file.type.startsWith('video/')) {
-          // For videos, we'll just enforce size and resolution limits
-          // Advanced video compression would require additional libraries
-          if (file.size > 50 * 1024 * 1024) { // 50MB limit for videos
-            return c.json({ error: "Video size exceeds 50MB limit" }, 400);
+          if (file.type.startsWith('image/')) {
+            console.log("Compressing image file");
+            const arrayBuffer = await file.arrayBuffer();
+            const compressedBuffer = await gzip(new Uint8Array(arrayBuffer));
+            
+            processedFile = new File([compressedBuffer], file.name + '.gz', {
+              type: 'application/gzip'
+            });
+            console.log("Image compressed successfully");
           }
+          
+          if (file.type.startsWith('video/')) {
+            if (file.size > 50 * 1024 * 1024) { 
+              return c.json({ error: "Video size exceeds 50MB limit" }, 400);
+            }
+            console.log("Processing video file");
+          }
+          
+          console.log("Uploading to S3");
+          const url = await uploadToS3(processedFile);
+          console.log("File uploaded successfully, URL:", url);
+          fileUrls.push(url);
+        } catch (fileError) {
+          console.error('File processing error:', fileError);
+          return c.json({ 
+            error: `Failed to process file upload: ${fileError instanceof Error ? fileError.message : String(fileError)}` 
+          }, 500);
         }
-
-        const url = await uploadToS3(processedFile);
-        fileUrls.push(url);
-      } catch (error) {
-        console.error('File processing error:', error);
-        return c.json({ error: "Failed to process file upload" }, 500);
       }
     }
+    
+    console.log("All files processed, inserting to Supabase");
+    
+    // Save to Supabase
+    const { error } = await supabase
+      .from('reports')
+      .insert([{ ...reportData, fileUrls: JSON.stringify(fileUrls) }]);
+    
+    if (error) {
+      console.error("Supabase error:", error);
+      return c.json({ error: error.message }, 500);
+    }
+    
+    console.log("Report saved to database, generating PDF");
+    
+    // Generate PDF
+    try {
+      const pdfBuffer = await generatePDF(reportData);
+      console.log("PDF generated, uploading to S3");
+      
+      const pdfUrl = await uploadToS3(new File([pdfBuffer], 'report.pdf', { type: 'application/pdf' }));
+      console.log("PDF uploaded, URL:", pdfUrl);
+      
+      return c.json({ 
+        message: 'Report submitted successfully',
+        fileUrls,
+        pdfUrl
+      }, 201);
+    } catch (pdfError) {
+      console.error("PDF generation error:", pdfError);
+      return c.json({ 
+        message: 'Report saved but PDF generation failed',
+        error: pdfError instanceof Error ? pdfError.message : String(pdfError),
+        fileUrls
+      }, 500);
+    }
+    
+  } catch (error) {
+    console.error("Server error:", error);
+    return c.json({ 
+      error: error instanceof Error ? error.message : String(error) 
+    }, 500);
   }
-  const { error } = await supabase
-    .from('reports')
-    .insert([{ ...reportData, fileUrls: JSON.stringify(fileUrls) }]);
-  if (error) {
-    return c.json({ error: error.message }, 500);
-  }
-  const pdfBuffer = await generatePDF(reportData);
-  const pdfUrl = await uploadToS3(new File([pdfBuffer], 'report.pdf', { type: 'application/pdf' }));
-  return c.json({ 
-    message: 'Report submitted successfully',
-    fileUrls,
-    pdfUrl
-  }, 201);
 });

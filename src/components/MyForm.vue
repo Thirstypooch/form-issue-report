@@ -140,15 +140,17 @@ export default defineComponent({
           method: 'POST',
           body: formData
         })
-        if (!response.ok) {
-          throw new Error('Failed to submit report')
-        }
         const result = await response.json()
+        if (!response.ok) {
+          console.error('Server error:', result);
+          alert(`Failed to submit report: ${result.error || 'Unknown error'}`);
+          return;
+        }
         console.log('Success:', result)
-        // Reset form or show success message
+        alert('Report submitted successfully!');
       } catch (error) {
         console.error('Error:', error)
-        // Show error message to user
+        alert(`Error: ${error.message}`);
       }
     }
     return {
