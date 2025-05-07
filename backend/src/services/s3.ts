@@ -11,7 +11,6 @@ const s3 = new S3Client({
 export async function uploadToS3(file: File): Promise<string> {
   const arrayBuffer = await file.arrayBuffer();
   const buffer = new Uint8Array(arrayBuffer);
-
   const command = new PutObjectCommand({
     Bucket: Deno.env.get('S3_BUCKET_NAME')!,
     Key: `uploads/${file.name}`,

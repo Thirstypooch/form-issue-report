@@ -14,19 +14,14 @@ export const reportSchema = z.object({
   severityLevel: z.string(),
   hasPreviouslyOccurred: z.string(),
   additionalComments: z.string(),
-  screenshots: z.array(z.instanceof(File)).refine((files) => {
-    return files.every(file => {
-      const validTypes = [
-        'image/jpeg',
-        'image/png',
-        'image/gif',
-        'image/webp',
-        'video/mp4',
-        'video/webm',
-        'video/quicktime'
-      ];
-      return validTypes.includes(file.type);
-    }), {
-      message: "Only images (JPEG, PNG, GIF, WebP) and videos (MP4, WebM, QuickTime) are allowed"
-    }})
+  screenshots: z
+  .array(z.instanceof(File))
+  .refine(
+    (files) =>
+      files.every((file) =>
+        ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'video/mp4', 'video/webm', 'video/quicktime'].includes(file.type)
+      ),
+    { message: 'Only images and videos (JPEG, PNG, MP4, etc.) are allowed' }
+  )
+  .optional()
 });

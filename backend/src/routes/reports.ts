@@ -63,7 +63,7 @@ reportsRouter.post('/', async (c) => {
   }
   const { error } = await supabase
     .from('reports')
-    .insert([{ ...reportData, fileUrls }]);
+    .insert([{ ...reportData, fileUrls: JSON.stringify(fileUrls) }]);
   if (error) {
     return c.json({ error: error.message }, 500);
   }
