@@ -93,7 +93,6 @@ export default defineComponent({
       }
     }
 
-    // Set default operating system based on device type
     const updateOperatingSystem = (deviceType: string) => {
       if (deviceType === 'PC') {
         deviceInfo.operatingSystem = 'Windows 11'
@@ -106,24 +105,20 @@ export default defineComponent({
       }
     }
 
-    // Watch for changes in device type to update operating system
     watch(() => deviceInfo.deviceType, (newDeviceType) => {
       if (newDeviceType) {
         updateOperatingSystem(newDeviceType)
       }
     })
 
-    // Set initial operating system if device type is already selected
     if (deviceInfo.deviceType) {
       updateOperatingSystem(deviceInfo.deviceType)
     }
 
-    // Watch for changes in the deviceInfo object and emit updates
     watch(deviceInfo, (newValue) => {
       emit('update:modelValue', newValue)
     }, { deep: true })
 
-    // Watch for changes in props to update local state
     watch(() => props.modelValue, (newValue) => {
       deviceInfo.deviceType = newValue.deviceType || ''
       deviceInfo.deviceModel = newValue.deviceModel || ''

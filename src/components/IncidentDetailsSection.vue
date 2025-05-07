@@ -40,12 +40,12 @@ export default defineComponent({
       problemDescription: props.modelValue.problemDescription || ''
     })
 
-    // Watch for changes in the incidentDetails object and emit updates
+
     watch(incidentDetails, (newValue) => {
       emit('update:modelValue', newValue)
     }, { deep: true })
 
-    // Watch for changes in props to update local state
+
     watch(() => props.modelValue, (newValue) => {
       incidentDetails.incidentDate = newValue.incidentDate || ''
       incidentDetails.problemDescription = newValue.problemDescription || ''

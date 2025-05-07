@@ -77,12 +77,12 @@ export default defineComponent({
       }
     }
 
-    // Watch for changes in the additionalInfo object and emit updates
+
     watch(additionalInfo, (newValue) => {
       emit('update:modelValue', newValue)
     }, { deep: true })
 
-    // Watch for changes in props to update local state
+
     watch(() => props.modelValue, (newValue) => {
       additionalInfo.severityLevel = newValue.severityLevel || ''
       additionalInfo.hasPreviouslyOccurred = newValue.hasPreviouslyOccurred || ''

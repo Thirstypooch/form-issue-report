@@ -49,12 +49,11 @@ export default defineComponent({
       actualBehavior: props.modelValue.actualBehavior || ''
     })
 
-    // Watch for changes in the problemAnalysis object and emit updates
+
     watch(problemAnalysis, (newValue) => {
       emit('update:modelValue', newValue)
     }, { deep: true })
 
-    // Watch for changes in props to update local state
     watch(() => props.modelValue, (newValue) => {
       problemAnalysis.reproduccionSteps = newValue.reproduccionSteps || ''
       problemAnalysis.expectedBehavior = newValue.expectedBehavior || ''
