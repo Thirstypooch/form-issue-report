@@ -1,4 +1,4 @@
-import { z } from "https://deno.land/x/zod@v3.22.2/mod.ts";
+import { z } from "zod";
 
 export const reportSchema = z.object({
   deviceType: z.string(),

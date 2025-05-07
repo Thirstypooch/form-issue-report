@@ -1,9 +1,9 @@
-import { Hono } from 'https://deno.land/x/hono@v3.11.7/mod.ts';
-import { reportSchema } from '../utils/validation.ts';
-import { supabase } from '../services/supabase.ts';
-import { uploadToS3 } from '../services/s3.ts';
-import { generatePDF } from '../services/pdf.ts';
-import { gzip } from 'https://deno.land/x/compress@v0.4.5/mod.ts';
+import { Hono } from "hono";
+import { reportSchema } from "../utils/validation.ts";
+import { supabase } from "../services/supabase.ts";
+import { uploadToS3 } from "../services/s3.ts";
+import { generatePDF } from "../services/pdf.ts";
+import { gzip } from "compress";
 
 type ReportEnv = {
   Variables: {};

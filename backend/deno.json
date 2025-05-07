@@ -1,12 +1,19 @@
 {
   "imports": {
-    "hono": "jsr:@hono/hono@^4.7.8"
+    "hono": "https://deno.land/x/hono@v3.11.7/mod.ts",
+    "supabase": "https://esm.sh/@supabase/supabase-js@2",
+    "zod": "https://deno.land/x/zod@v3.22.4/mod.ts",
+    "compress": "https://deno.land/x/compress@v0.4.5/mod.ts",
+    "@aws-sdk/client-s3": "npm:@aws-sdk/client-s3",
+    "pdf-lib": "https://cdn.skypack.dev/pdf-lib@1.17.1?dts"
   },
   "tasks": {
-    "start": "deno run --allow-net --allow-env --allow-read main.ts"
+    "start": "deno run --allow-net --allow-env --allow-read --allow-write src/index.ts",
+    "dev": "deno run --watch --allow-net --allow-env --allow-read --allow-write src/index.ts"
   },
   "compilerOptions": {
     "jsx": "precompile",
-    "jsxImportSource": "hono/jsx"
+    "jsxImportSource": "hono/jsx",
+    "lib": ["deno.window", "dom"]
   }
 }
