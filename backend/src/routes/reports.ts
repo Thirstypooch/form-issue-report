@@ -26,6 +26,16 @@ reportsRouter.post('/', async (c) => {
     console.log("Validation successful");
     const reportData = validation.data;
     
+    // Format the incident_date as a proper timestamp
+    if (reportData.incident_date) {
+      const date = new Date(reportData.incident_date);
+      if (!isNaN(date.getTime())) {
+        reportData.incident_date = date.toISOString();
+      } else {
+        return c.json({ error: "Invalid date format for incident_date" }, 400);
+      }
+    }
+    
     // Handle file uploads
     const files = body['screenshots'] as File[] | undefined;
     const fileUrls: string[] = [];
@@ -79,7 +89,7 @@ reportsRouter.post('/', async (c) => {
     // Save to Supabase
     const { error } = await supabase
       .from('reports')
-      .insert([{ ...reportData, fileUrls: JSON.stringify(fileUrls) }]);
+      .insert([{ ...reportData, file_urls: fileUrls }]);
     
     if (error) {
       console.error("Supabase error:", error);

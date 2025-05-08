@@ -118,14 +118,34 @@ export default defineComponent({
       }
       return null
     }
+    // In the handleSubmit function
     const handleSubmit = async () => {
       try {
-        const formData = new FormData()
+        const formData = new FormData();
+        const keyMapping = {
+          deviceType: 'device_type',
+          deviceModel: 'device_model',
+          operatingSystem: 'operating_system',
+          otherOperatingSystem: 'other_operating_system',
+          appVersion: 'app_version',
+          incidentDate: 'incident_date',
+          problemDescription: 'problem_description',
+          reproduccionSteps: 'reproducion_steps',
+          expectedBehavior: 'expected_behavior',
+          actualBehavior: 'actual_behavior',
+          severityLevel: 'severity_level',
+          hasPreviouslyOccurred: 'has_previously_occurred',
+          additionalComments: 'additional_comments',
+          screenshots: 'screenshots'
+        }
+        console.log('Date being submitted:', completeForm.value.incidentDate);
         Object.entries(completeForm.value).forEach(([key, value]) => {
           if (key !== 'screenshots') {
-            formData.append(key, value as string)
+            const backendKey = keyMapping[key] || key
+            formData.append(backendKey, value as string)
           }
         })
+        
         if (completeForm.value.screenshots.length > 0) {
           for (const file of completeForm.value.screenshots) {
             const error = validateFile(file)
@@ -140,12 +160,21 @@ export default defineComponent({
           method: 'POST',
           body: formData
         })
+        
         const result = await response.json()
         if (!response.ok) {
           console.error('Server error:', result);
-          alert(`Failed to submit report: ${result.error || 'Unknown error'}`);
+          // Format error message for better display
+          let errorMessage = 'Failed to submit report: ';
+          if (result.error && Array.isArray(result.error)) {
+            errorMessage += result.error.map(err => `${err.path.join('.')}: ${err.message}`).join('\n');
+          } else {
+            errorMessage += JSON.stringify(result.error || 'Unknown error');
+          }
+          alert(errorMessage);
           return;
         }
+        
         console.log('Success:', result)
         alert('Report submitted successfully!');
       } catch (error) {
