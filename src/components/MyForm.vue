@@ -1,6 +1,7 @@
 <template>
   <div
-    class="flex w-full flex-col items-center gap-5 rounded-[3.5px] bg-black bg-opacity-25 p-5 text-sm text-white md:w-10/12 lg:w-8/12">
+    class="flex w-full flex-col items-center gap-5 rounded-[3.5px] bg-black bg-opacity-25 p-5 text-sm text-white md:w-10/12 lg:w-8/12"
+  >
     <h2 class="text-2xl">Report an issue</h2>
     <form class="w-full space-y-8" @submit.prevent="handleSubmit">
       <section>
@@ -24,8 +25,10 @@
       </section>
 
       <div class="flex w-full justify-center">
-        <button type="submit"
-          class="duration-400 min-w-32 rounded-[3.5px] bg-[#6c757d] px-[10.5px] py-[5.25px] transition-colors hover:bg-[#5a6268]">
+        <button
+          type="submit"
+          class="duration-400 min-w-32 rounded-[3.5px] bg-[#6c757d] px-[10.5px] py-[5.25px] transition-colors hover:bg-[#5a6268]"
+        >
           Send
         </button>
       </div>
@@ -39,6 +42,7 @@ import DeviceInfoSection from './DeviceInfoSection.vue'
 import IncidentDetailsSection from './IncidentDetailsSection.vue'
 import ProblemAnalysisSection from './ProblemAnalysisSection.vue'
 import AdditionalInfoSection from './AdditionalInfoSection.vue'
+import { formatISO } from 'date-fns'
 
 interface FormData {
   deviceType: string
@@ -73,8 +77,9 @@ export default defineComponent({
       otherOperatingSystem: '',
       appVersion: ''
     })
+    const today = new Date().toISOString().split('T')[0]
     const incidentDetails = reactive({
-      incidentDate: '',
+      incidentDate: today,
       problemDescription: ''
     })
     const problemAnalysis = reactive({
@@ -121,7 +126,7 @@ export default defineComponent({
     // In the handleSubmit function
     const handleSubmit = async () => {
       try {
-        const formData = new FormData();
+        const formData = new FormData()
         const keyMapping = {
           deviceType: 'device_type',
           deviceModel: 'device_model',
@@ -138,14 +143,26 @@ export default defineComponent({
           additionalComments: 'additional_comments',
           screenshots: 'screenshots'
         }
-        console.log('Date being submitted:', completeForm.value.incidentDate);
+        console.log('Date being submitted:', completeForm.value.incidentDate)
+
         Object.entries(completeForm.value).forEach(([key, value]) => {
           if (key !== 'screenshots') {
             const backendKey = keyMapping[key] || key
             formData.append(backendKey, value as string)
           }
         })
-        
+
+        // Convert incidentDate to ISO string
+        if (completeForm.value.incidentDate) {
+          const dateObj = new Date(completeForm.value.incidentDate)
+          formData.set('incident_date', formatISO(dateObj, { representation: 'date' }))
+        }
+
+        // Add this log right after setting incident_date
+        console.log('Submitting incident_date:', formData.get('incident_date'))
+        formData.forEach((value, key) => {
+          console.log('FormData:', key, value)
+        })
         if (completeForm.value.screenshots.length > 0) {
           for (const file of completeForm.value.screenshots) {
             const error = validateFile(file)
@@ -160,26 +177,28 @@ export default defineComponent({
           method: 'POST',
           body: formData
         })
-        
+
         const result = await response.json()
         if (!response.ok) {
-          console.error('Server error:', result);
+          console.error('Server error:', result)
           // Format error message for better display
-          let errorMessage = 'Failed to submit report: ';
+          let errorMessage = 'Failed to submit report: '
           if (result.error && Array.isArray(result.error)) {
-            errorMessage += result.error.map(err => `${err.path.join('.')}: ${err.message}`).join('\n');
+            errorMessage += result.error
+              .map((err) => `${err.path.join('.')}: ${err.message}`)
+              .join('\n')
           } else {
-            errorMessage += JSON.stringify(result.error || 'Unknown error');
+            errorMessage += JSON.stringify(result.error || 'Unknown error')
           }
-          alert(errorMessage);
-          return;
+          alert(errorMessage)
+          return
         }
-        
+
         console.log('Success:', result)
-        alert('Report submitted successfully!');
+        alert('Report submitted successfully!')
       } catch (error) {
         console.error('Error:', error)
-        alert(`Error: ${error.message}`);
+        alert(`Error: ${error.message}`)
       }
     }
     return {

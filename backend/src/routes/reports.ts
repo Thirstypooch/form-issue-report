@@ -16,7 +16,10 @@ reportsRouter.post('/', async (c) => {
     console.log("Received request");
     const body = await c.req.parseBody();
     console.log("Parsed body:", body);
-    
+
+    // Add this log to see the incident_date value
+    console.log('Received incident_date:', body['incident_date']);
+
     const validation = reportSchema.safeParse(body);
     if (!validation.success) {
       console.error("Validation error:", validation.error.errors);
