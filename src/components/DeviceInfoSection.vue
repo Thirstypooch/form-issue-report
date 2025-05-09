@@ -64,13 +64,19 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, reactive, ref, watch } from 'vue'
+import { defineComponent, reactive, ref, watch, PropType } from 'vue'
 
 export default defineComponent({
   name: 'DeviceInfoSection',
   props: {
     modelValue: {
-      type: Object,
+      type: Object as PropType<{
+        deviceType: string
+        deviceModel: string
+        operatingSystem: string
+        otherOperatingSystem: string
+        appVersion: string
+      }>,
       required: true
     }
   },

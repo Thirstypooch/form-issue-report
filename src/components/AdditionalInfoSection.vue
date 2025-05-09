@@ -50,13 +50,18 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, reactive, watch } from 'vue'
+import { defineComponent, reactive, watch, PropType} from 'vue'
 
 export default defineComponent({
   name: 'AdditionalInfoSection',
   props: {
     modelValue: {
-      type: Object,
+      type: Object as PropType<{
+        severityLevel: string
+        hasPreviouslyOccurred: string
+        additionalComments: string
+        screenshots: File[]
+      }>,
       required: true
     }
   },

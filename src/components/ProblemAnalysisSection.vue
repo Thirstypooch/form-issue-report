@@ -31,13 +31,17 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, reactive, watch } from 'vue'
+import { defineComponent, reactive, watch, PropType} from 'vue'
 
 export default defineComponent({
   name: 'ProblemAnalysisSection',
   props: {
     modelValue: {
-      type: Object,
+      type: Object as PropType<{
+        reproduccionSteps: string
+        expectedBehavior: string
+        actualBehavior: string
+      }>,
       required: true
     }
   },

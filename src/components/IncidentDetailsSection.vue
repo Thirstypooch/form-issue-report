@@ -26,13 +26,16 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, reactive, watch, onMounted } from 'vue'
+import { defineComponent, reactive, watch, onMounted, PropType } from 'vue'
 
 export default defineComponent({
   name: 'IncidentDetailsSection',
   props: {
     modelValue: {
-      type: Object,
+      type: Object as PropType<{
+        incidentDate: string;
+        problemDescription: string;
+      }>,
       required: true
     }
   },
