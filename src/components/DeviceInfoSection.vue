@@ -111,28 +111,39 @@ export default defineComponent({
       }
     }
 
-    watch(() => deviceInfo.deviceType, (newDeviceType) => {
-      if (newDeviceType) {
-        updateOperatingSystem(newDeviceType)
+    watch(
+      () => deviceInfo.deviceType,
+      (newDeviceType) => {
+        if (newDeviceType) {
+          updateOperatingSystem(newDeviceType)
+        }
       }
-    })
+    )
 
     if (deviceInfo.deviceType) {
       updateOperatingSystem(deviceInfo.deviceType)
     }
 
-    watch(deviceInfo, (newValue) => {
-      emit('update:modelValue', newValue)
-    }, { deep: true })
+    watch(
+      deviceInfo,
+      (newValue) => {
+        emit('update:modelValue', newValue)
+      },
+      { deep: true }
+    )
 
-    watch(() => props.modelValue, (newValue) => {
-      deviceInfo.deviceType = newValue.deviceType || ''
-      deviceInfo.deviceModel = newValue.deviceModel || ''
-      deviceInfo.operatingSystem = newValue.operatingSystem || ''
-      deviceInfo.otherOperatingSystem = newValue.otherOperatingSystem || ''
-      deviceInfo.appVersion = newValue.appVersion || ''
-      isOtherOS.value = deviceInfo.operatingSystem === 'Other'
-    }, { deep: true })
+    watch(
+      () => props.modelValue,
+      (newValue) => {
+        deviceInfo.deviceType = newValue.deviceType || ''
+        deviceInfo.deviceModel = newValue.deviceModel || ''
+        deviceInfo.operatingSystem = newValue.operatingSystem || ''
+        deviceInfo.otherOperatingSystem = newValue.otherOperatingSystem || ''
+        deviceInfo.appVersion = newValue.appVersion || ''
+        isOtherOS.value = deviceInfo.operatingSystem === 'Other'
+      },
+      { deep: true }
+    )
 
     return {
       deviceInfo,

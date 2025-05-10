@@ -6,22 +6,34 @@
     <form class="w-full space-y-8" @submit.prevent="handleSubmit">
       <section>
         <h3 class="mb-4 text-xl">Device Information</h3>
-        <DeviceInfoSection v-model="deviceInfo" />
+        <DeviceInfoSection
+          :modelValue="deviceInfo"
+          @update:modelValue="(newData) => Object.assign(deviceInfo, newData)"
+        />
       </section>
 
       <section>
         <h3 class="mb-4 text-xl">Incident Details</h3>
-        <IncidentDetailsSection v-model="incidentDetails" />
+        <IncidentDetailsSection
+          :modelValue="incidentDetails"
+          @update:modelValue="(newData) => Object.assign(incidentDetails, newData)"
+        />
       </section>
 
       <section>
         <h3 class="mb-4 text-xl">Problem Analysis</h3>
-        <ProblemAnalysisSection v-model="problemAnalysis" />
+        <ProblemAnalysisSection
+          :modelValue="problemAnalysis"
+          @update:modelValue="(newData) => Object.assign(problemAnalysis, newData)"
+        />
       </section>
 
       <section>
         <h3 class="mb-4 text-xl">Additional Information</h3>
-        <AdditionalInfoSection v-model="additionalInfo" />
+        <AdditionalInfoSection
+          :modelValue="additionalInfo"
+          @update:modelValue="(newData) => Object.assign(additionalInfo, newData)"
+        />
       </section>
 
       <div class="flex w-full justify-center">
@@ -143,26 +155,29 @@ export default defineComponent({
           additionalComments: 'additional_comments',
           screenshots: 'screenshots'
         }
-        console.log('Date being submitted:', completeForm.value.incidentDate)
 
+        // Create a snake_case version of the form data
+        const snakeCaseData = {} as Record<string, string>
         Object.entries(completeForm.value).forEach(([key, value]) => {
           if (key !== 'screenshots') {
             const backendKey = keyMapping[key] || key
-            formData.append(backendKey, value as string)
+            // Convert undefined values to empty strings
+            snakeCaseData[backendKey] = value ? String(value) : ''
           }
         })
 
         // Convert incidentDate to ISO string
         if (completeForm.value.incidentDate) {
           const dateObj = new Date(completeForm.value.incidentDate)
-          formData.set('incident_date', formatISO(dateObj, { representation: 'date' }))
+          snakeCaseData['incident_date'] = formatISO(dateObj, { representation: 'date' })
         }
 
-        // Add this log right after setting incident_date
-        console.log('Submitting incident_date:', formData.get('incident_date'))
-        formData.forEach((value, key) => {
-          console.log('FormData:', key, value)
+        // Append all snake_case data to FormData
+        Object.entries(snakeCaseData).forEach(([key, value]) => {
+          formData.append(key, value)
         })
+
+        // Add screenshots if any
         if (completeForm.value.screenshots.length > 0) {
           for (const file of completeForm.value.screenshots) {
             const error = validateFile(file)
@@ -173,6 +188,13 @@ export default defineComponent({
             formData.append('screenshots', file)
           }
         }
+
+        // Add debug logs
+        console.log('Submitting form data:')
+        formData.forEach((value, key) => {
+          console.log('FormData:', key, value)
+        })
+
         const response = await fetch('http://localhost:8000/reports', {
           method: 'POST',
           body: formData
