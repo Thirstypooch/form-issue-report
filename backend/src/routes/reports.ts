@@ -25,10 +25,10 @@ reportsRouter.post('/', async (c) => {
       console.error("Validation error:", validation.error.errors);
       return c.json({ error: validation.error.errors }, 400);
     }
-    
+
     console.log("Validation successful");
     const reportData = validation.data;
-    
+
     // Format the incident_date as a proper timestamp
     if (reportData.incident_date) {
       const date = new Date(reportData.incident_date);
@@ -38,42 +38,42 @@ reportsRouter.post('/', async (c) => {
         return c.json({ error: "Invalid date format for incident_date" }, 400);
       }
     }
-    
+
     // Handle file uploads
     const files = body['screenshots'] as File[] | undefined;
     const fileUrls: string[] = [];
-    
+
     if (files && files.length > 0) {
       console.log(`Processing ${files.length} files`);
-      
+
       for (const file of files) {
         console.log(`Processing file: ${file.name}, type: ${file.type}, size: ${file.size}`);
-        
+
         if (file.size > 10 * 1024 * 1024) {
           return c.json({ error: "File size exceeds 10MB limit" }, 400);
         }
-        
+
         try {
           let processedFile = file;
-          
+
           if (file.type.startsWith('image/')) {
             console.log("Compressing image file");
             const arrayBuffer = await file.arrayBuffer();
             const compressedBuffer = await gzip(new Uint8Array(arrayBuffer));
-            
+
             processedFile = new File([compressedBuffer], file.name + '.gz', {
               type: 'application/gzip'
             });
             console.log("Image compressed successfully");
           }
-          
+
           if (file.type.startsWith('video/')) {
             if (file.size > 50 * 1024 * 1024) { 
               return c.json({ error: "Video size exceeds 50MB limit" }, 400);
             }
             console.log("Processing video file");
           }
-          
+
           console.log("Uploading to S3");
           const url = await uploadToS3(processedFile);
           console.log("File uploaded successfully, URL:", url);
@@ -86,29 +86,37 @@ reportsRouter.post('/', async (c) => {
         }
       }
     }
-    
+
     console.log("All files processed, inserting to Supabase");
-    
-    // Save to Supabase
+
+    // Remove screenshots field from reportData as it doesn't exist in the database schema
+    const { screenshots, ...dataToInsert } = reportData;
+    console.log("Data being prepared for Supabase (dataToInsert):", dataToInsert);
+    console.log("File URLs being added:", fileUrls);
+
+    const payloadForSupabase = { ...dataToInsert, file_urls: fileUrls };
+    console.log("Final payload for Supabase:", payloadForSupabase);
+
+
     const { error } = await supabase
       .from('reports')
-      .insert([{ ...reportData, file_urls: fileUrls }]);
-    
+      .insert([payloadForSupabase]);
+
     if (error) {
       console.error("Supabase error:", error);
       return c.json({ error: error.message }, 500);
     }
-    
+
     console.log("Report saved to database, generating PDF");
-    
+
     // Generate PDF
     try {
       const pdfBuffer = await generatePDF(reportData);
       console.log("PDF generated, uploading to S3");
-      
+
       const pdfUrl = await uploadToS3(new File([pdfBuffer], 'report.pdf', { type: 'application/pdf' }));
       console.log("PDF uploaded, URL:", pdfUrl);
-      
+
       return c.json({ 
         message: 'Report submitted successfully',
         fileUrls,
@@ -122,7 +130,7 @@ reportsRouter.post('/', async (c) => {
         fileUrls
       }, 500);
     }
-    
+
   } catch (error) {
     console.error("Server error:", error);
     return c.json({ 
