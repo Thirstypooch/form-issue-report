@@ -195,7 +195,7 @@ export default defineComponent({
           console.log('FormData:', key, value)
         })
 
-        const response = await fetch('http://localhost:8000/reports', {
+        const response = await fetch('/api/reports', {
           method: 'POST',
           body: formData
         })
