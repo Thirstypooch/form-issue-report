@@ -1,7 +1,7 @@
 import { S3Client, PutObjectCommand } from 'npm:@aws-sdk/client-s3';
 
 const s3 = new S3Client({
-  region: Deno.env.get('AWS_REGION')!,
+  region: Deno.env.get('FORM_AWS_REGION')!,
   credentials: {
     accessKeyId: Deno.env.get('AWS_ACCESS_KEY_ID')!,
     secretAccessKey: Deno.env.get('AWS_SECRET_ACCESS_KEY')!,
