@@ -17,9 +17,6 @@ reportsRouter.post('/', async (c) => {
     const body = await c.req.parseBody();
     console.log("Parsed body:", body);
 
-    // Add this log to see the incident_date value
-    console.log('Received incident_date:', body['incident_date']);
-
     const validation = reportSchema.safeParse(body);
     if (!validation.success) {
       console.error("Validation error:", validation.error.errors);
@@ -39,18 +36,22 @@ reportsRouter.post('/', async (c) => {
       }
     }
 
-    // Handle file uploads
-    const files = body['screenshots'] as File[] | undefined;
+    // --- Start of Screenshot and File Processing ---
     const fileUrls: string[] = [];
+    const validatedScreenshotFiles = reportData.screenshots;
 
-    if (files && files.length > 0) {
-      console.log(`Processing ${files.length} files`);
+    if (validatedScreenshotFiles && validatedScreenshotFiles.length > 0) {
+      console.log(`Processing ${validatedScreenshotFiles.length} validated screenshot files.`);
 
-      for (const file of files) {
+      for (const file of validatedScreenshotFiles) {
         console.log(`Processing file: ${file.name}, type: ${file.type}, size: ${file.size}`);
 
-        if (file.size > 10 * 1024 * 1024) {
-          return c.json({ error: "File size exceeds 10MB limit" }, 400);
+        // File size validation
+        if (file.type.startsWith('video/') && file.size > 50 * 1024 * 1024) {
+          return c.json({ error: "Video size exceeds 50MB limit" }, 400);
+        }
+        if (!file.type.startsWith('video/') && file.size > 10 * 1024 * 1024) {
+          return c.json({ error: "Image/File size exceeds 10MB limit" }, 400);
         }
 
         try {
@@ -67,74 +68,76 @@ reportsRouter.post('/', async (c) => {
             console.log("Image compressed successfully");
           }
 
-          if (file.type.startsWith('video/')) {
-            if (file.size > 50 * 1024 * 1024) { 
-              return c.json({ error: "Video size exceeds 50MB limit" }, 400);
-            }
-            console.log("Processing video file");
-          }
-
-          console.log("Uploading to S3");
+          console.log("Uploading to S3:", processedFile.name);
           const url = await uploadToS3(processedFile);
           console.log("File uploaded successfully, URL:", url);
           fileUrls.push(url);
         } catch (fileError) {
           console.error('File processing error:', fileError);
-          return c.json({ 
-            error: `Failed to process file upload: ${fileError instanceof Error ? fileError.message : String(fileError)}` 
+          return c.json({
+            error: `Failed to process file upload: ${fileError instanceof Error ? fileError.message : String(fileError)}`
           }, 500);
         }
       }
+    } else {
+      console.log("No validated screenshot files to process.");
     }
+    // --- End of Screenshot and File Processing ---
 
-    console.log("All files processed, inserting to Supabase");
+    // --- Start of PDF Generation and Upload ---
+    let pdfS3Url: string | undefined;
+    try {
+      console.log("Generating PDF prior to main DB insert...");
+      // Pass the full reportData to generatePDF so it has all fields for the report
+      const pdfBuffer = await generatePDF(reportData);
+      pdfS3Url = await uploadToS3(new File([pdfBuffer], 'report.pdf', { type: 'application/pdf' }));
+      console.log("PDF generated and S3 URL obtained:", pdfS3Url);
+    } catch (pdfError) {
+      console.error("PDF generation/upload error before DB insert:", pdfError);
+      // Fail the whole request if PDF generation fails, as it's a required part of the process
+      return c.json({ error: "Failed to generate PDF, report not saved." }, 500);
+    }
+    // --- End of PDF Generation and Upload ---
 
-    // Remove screenshots field from reportData as it doesn't exist in the database schema
+
+    // --- Start of Supabase Database Insertion ---
+    console.log("All files and PDF processed, preparing for Supabase insert.");
+
+    // Remove the 'screenshots' property (which contains File objects) before insertion
     const { screenshots, ...dataToInsert } = reportData;
-    console.log("Data being prepared for Supabase (dataToInsert):", dataToInsert);
-    console.log("File URLs being added:", fileUrls);
 
-    const payloadForSupabase = { ...dataToInsert, file_urls: fileUrls };
+    const payloadForSupabase = {
+      ...dataToInsert,
+      file_urls: fileUrls, // Add the array of screenshot URLs
+      pdf_url: pdfS3Url    // Add the PDF URL
+    };
+
     console.log("Final payload for Supabase:", payloadForSupabase);
 
-
-    const { error } = await supabase
+    // Save the complete record to Supabase
+    const { error: insertError } = await supabase
       .from('reports')
       .insert([payloadForSupabase]);
 
-    if (error) {
-      console.error("Supabase error:", error);
-      return c.json({ error: error.message }, 500);
+    if (insertError) {
+      console.error("Supabase error:", insertError);
+      return c.json({ error: insertError.message }, 500);
     }
 
-    console.log("Report saved to database, generating PDF");
+    console.log("Report and all URLs saved to database successfully.");
+    // --- End of Supabase Database Insertion ---
 
-    // Generate PDF
-    try {
-      const pdfBuffer = await generatePDF(reportData);
-      console.log("PDF generated, uploading to S3");
-
-      const pdfUrl = await uploadToS3(new File([pdfBuffer], 'report.pdf', { type: 'application/pdf' }));
-      console.log("PDF uploaded, URL:", pdfUrl);
-
-      return c.json({ 
-        message: 'Report submitted successfully',
-        fileUrls,
-        pdfUrl
-      }, 201);
-    } catch (pdfError) {
-      console.error("PDF generation error:", pdfError);
-      return c.json({ 
-        message: 'Report saved but PDF generation failed',
-        error: pdfError instanceof Error ? pdfError.message : String(pdfError),
-        fileUrls
-      }, 500);
-    }
+    // --- Final Success Response ---
+    return c.json({
+      message: 'Report submitted successfully',
+      fileUrls: fileUrls, // Return the array of screenshot URLs
+      pdfUrl: pdfS3Url      // Return the PDF URL
+    }, 201);
 
   } catch (error) {
-    console.error("Server error:", error);
-    return c.json({ 
-      error: error instanceof Error ? error.message : String(error) 
+    console.error("A top-level server error occurred:", error);
+    return c.json({
+      error: error instanceof Error ? error.message : String(error)
     }, 500);
   }
 });
