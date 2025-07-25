@@ -9,8 +9,8 @@
     "pdf-lib": "https://cdn.skypack.dev/pdf-lib@1.17.1?dts"
   },
   "tasks": {
-    "start": "deno run --allow-net --allow-env --allow-read --allow-write --allow-import --allow-sys src/index.ts",
-    "dev": "deno run --watch --allow-net --allow-env --allow-read --allow-write src/index.ts"
+    "start": "deno serve --allow-net --allow-env --allow-read --allow-write --allow-import --allow-sys src/routes/reports.ts",
+    "dev": "deno serve --watch --allow-net --allow-env --allow-read --allow-write --allow-import --allow-sys src/routes/reports.ts"
   },
   "compilerOptions": {
     "jsx": "precompile",

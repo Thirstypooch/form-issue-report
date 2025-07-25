@@ -60,4 +60,6 @@ debug.log
 .vercel
 .netlify
 
-repomix-output.xml
+repomix-output-backend.xml
+repomix-output-frontend.xml
+.junie/
