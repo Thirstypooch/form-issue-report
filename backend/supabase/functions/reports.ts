@@ -1,3 +1,4 @@
-import { reportsRouter } from '../../src/routes/reports.ts';
+// @ts-ignore: Deno environment
+import app from '../../src/routes/reports.ts';
 
-export default reportsRouter;
+export default app;

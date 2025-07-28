@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "allowJs": true,
+    "esModuleInterop": true,
+    "experimentalDecorators": true,
+    "inlineSourceMap": true,
+    "isolatedModules": true,
+    "jsx": "precompile",
+    "jsxImportSource": "hono/jsx",
+    "lib": ["deno.window", "dom"],
+    "module": "esnext",
+    "moduleDetection": "force",
+    "strict": true,
+    "target": "esnext",
+    "useDefineForClassFields": true,
+    "types": ["https://deno.land/x/deno@$DENO_VERSION/mod.d.ts"]
+  },
+  "include": ["./src/**/*.ts", "./src/**/*.tsx"],
+  "exclude": ["node_modules"],
+  "typeRoots": ["./deno.d.ts"]
+}

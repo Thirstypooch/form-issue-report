@@ -1,4 +1,5 @@
-import { createClient } from "supabase";
+// @ts-ignore: Deno environment
+import { createClient } from "npm:@supabase/supabase-js";
 
 // Check if environment variables are available
 const supabaseUrl = Deno.env.get('SUPABASE_URL');

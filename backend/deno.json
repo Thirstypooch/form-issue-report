@@ -6,7 +6,11 @@
     "zod": "https://deno.land/x/zod@v3.22.4/mod.ts",
     "compress": "https://deno.land/x/compress@v0.4.5/mod.ts",
     "@aws-sdk/client-s3": "npm:@aws-sdk/client-s3",
-    "pdf-lib": "https://cdn.skypack.dev/pdf-lib@1.17.1?dts"
+    "pdf-lib": "https://cdn.skypack.dev/pdf-lib@1.17.1?dts",
+    "s3-request-presigner": "npm:@aws-sdk/s3-request-presigner@^3.525.0",
+    "@google-cloud/pubsub": "npm:@google-cloud/pubsub@^4.0.0",
+    "std/": "https://deno.land/std@0.220.0/",
+    "std/node/": "https://deno.land/std@0.177.0/node/"
   },
   "tasks": {
     "start": "deno serve --allow-net --allow-env --allow-read --allow-write --allow-import --allow-sys src/routes/reports.ts",
@@ -16,5 +20,6 @@
     "jsx": "precompile",
     "jsxImportSource": "hono/jsx",
     "lib": ["deno.window", "dom"]
-  }
+  },
+  "nodeModulesDir": "auto"
 }

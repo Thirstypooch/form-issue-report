@@ -1,6 +1,7 @@
-import { S3Client, PutObjectCommand } from 'npm:@aws-sdk/client-s3';
+// @ts-ignore: Deno environment
+import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 
-const s3 = new S3Client({
+export const s3 = new S3Client({
   region: Deno.env.get('FORM_AWS_REGION')!,
   credentials: {
     accessKeyId: Deno.env.get('FORM_AWS_ACCESS_KEY_ID')!,

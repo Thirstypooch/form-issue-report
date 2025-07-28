@@ -1,24 +1,32 @@
+// @ts-ignore: Deno environment
 import "https://deno.land/std@0.224.0/dotenv/load.ts";
-import { Hono } from "hono";
-import { cors } from "hono/cors";
+// @ts-ignore: Deno environment
+import { Hono } from "npm:hono";
+// @ts-ignore: Deno environment
+import { cors } from "npm:hono/cors";
+// @ts-ignore: Deno environment
 import { reportSchema } from "../utils/validation.ts";
-import { supabase } from "../services/supabase.ts";
-import { uploadToS3 } from "../services/s3.ts";
-import { generatePDF } from "../services/pdf.ts";
-import { gzip } from "compress";
+// @ts-ignore: Deno environment
+import { publishReport } from "../services/pubsub.ts";
+// @ts-ignore: Deno environment
+import { getSignedUrl } from "s3-request-presigner";
+// @ts-ignore: Deno environment
+import { s3 } from "../services/s3.ts";
+// @ts-ignore: Deno environment
+import { PutObjectCommand } from "npm:@aws-sdk/client-s3";
 
-// --- Main App Setup (from your old index.ts) ---
+// --- Main App Setup ---
 type AppEnv = {
   Variables: {};
 };
 
 const app = new Hono<AppEnv>();
 
-// Define allowed origins for CORS
 const allowedOrigins = [
-  'http://localhost:5173', // Local Vue dev server
-  Deno.env.get('URL'),      // Netlify's main production URL
-  Deno.env.get('DEPLOY_PRIME_URL') // Netlify's URL for deploy previews
+  'http://localhost:5173',
+  // @ts-ignore: Deno environment
+  Deno.env.get('URL'),
+  Deno.env.get('DEPLOY_PRIME_URL')
 ].filter(Boolean) as string[];
 
 app.use('/*', cors({
@@ -35,78 +43,71 @@ app.use('/*', cors({
   credentials: true,
 }));
 
-// --- Routing Logic (from your old reports.ts) ---
 const reportsRouter = new Hono();
 
 reportsRouter.post('/', async (c) => {
+  const reportId = crypto.randomUUID();
+  console.log(`Received report submission. Assigning ID: ${reportId}`);
+
   try {
-    const body = await c.req.parseBody();
+    const body = await c.req.json();
     const validation = reportSchema.safeParse(body);
 
     if (!validation.success) {
+      console.error("Validation errors:", validation.error.errors);
       return c.json({ error: validation.error.errors }, 400);
     }
 
     const reportData = validation.data;
 
-    // Format the incident_date
-    if (reportData.incident_date) {
-      reportData.incident_date = new Date(reportData.incident_date).toISOString();
-    }
-
-    // Handle Screenshot Uploads
-    const fileUrls: string[] = [];
-    const validatedScreenshotFiles = reportData.screenshots;
-
-    if (validatedScreenshotFiles && validatedScreenshotFiles.length > 0) {
-      for (const file of validatedScreenshotFiles) {
-        let processedFile = file;
-        if (file.type.startsWith('image/')) {
-          const arrayBuffer = await file.arrayBuffer();
-          const compressedBuffer = await gzip(new Uint8Array(arrayBuffer));
-          processedFile = new File([compressedBuffer], file.name + '.gz', { type: 'application/gzip' });
-        }
-        const url = await uploadToS3(processedFile);
-        fileUrls.push(url);
-      }
-    }
-
-    // Generate and Upload PDF
-    const pdfBuffer = await generatePDF(reportData);
-    const pdfS3Url = await uploadToS3(new File([pdfBuffer], 'report.pdf', { type: 'application/pdf' }));
-
-    // Prepare data for Supabase
-    const { screenshots, ...dataToInsert } = reportData;
-    const payloadForSupabase = {
-      ...dataToInsert,
-      file_urls: fileUrls,
-      pdf_url: pdfS3Url,
+    const payloadForPubSub = {
+      report_id: reportId,
+      ...reportData,
     };
 
-    // Insert into Supabase
-    const { error: insertError } = await supabase.from('reports').insert([payloadForSupabase]);
-
-    if (insertError) {
-      throw insertError;
-    }
+    await publishReport(payloadForPubSub);
+    console.log(`Report data for ID ${reportId} published to Pub/Sub topic.`);
 
     return c.json({
-      message: 'Report submitted successfully',
-      fileUrls,
-      pdfUrl: pdfS3Url
-    }, 201);
+      message: 'Report received and queued for processing.',
+      reportId: reportId
+    }, 202);
 
   } catch (error) {
-    console.error("A server error occurred:", error);
+    console.error(`A server error occurred for report ID ${reportId} during reception or queuing:`, error);
     return c.json({
-      error: error instanceof Error ? error.message : String(error)
+      error: 'An internal server error occurred while processing your request. Please try again later.'
     }, 500);
   }
 });
 
-// Mount the router onto the main app at the desired path
-// Note: Since the Netlify redirect is to '/api/*', the path here is just '/'
 app.route('/reports', reportsRouter);
 
-// Export the Hono app instance as the default handler
+const presignedUrlRouter = new Hono();
+
+presignedUrlRouter.post('/presigned-url', async (c) => {
+  try {
+    const { fileName, fileType } = await c.req.json();
+    const reportId = crypto.randomUUID();
+
+    const key = `uploads/${reportId}-${fileName}`;
+
+    const command = new PutObjectCommand({
+      Bucket: Deno.env.get('S3_BUCKET_NAME')!,
+      Key: key,
+      ContentType: fileType,
+    });
+
+    const signedUrl = await getSignedUrl(s3, command, { expiresIn: 300 });
+    const publicUrl = `https://${Deno.env.get('S3_BUCKET_NAME')}.s3.amazonaws.com/${key}`;
+
+    return c.json({ url: signedUrl, s3ObjectUrl: publicUrl });
+  } catch (error) {
+    console.error('Failed to create pre-signed URL', error);
+    return c.json({ error: 'Could not create upload URL.' }, 500);
+  }
+});
+
+app.route('/', presignedUrlRouter);
+
 export default app;

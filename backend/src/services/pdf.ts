@@ -1,6 +1,9 @@
-import { PDFDocument } from "pdf-lib";
+// @ts-ignore: Deno environment
+import { PDFDocument } from "npm:pdf-lib";
+// @ts-ignore: Deno environment
 import { reportSchema } from "../utils/validation.ts";
-import { z } from "zod";
+// @ts-ignore: Deno environment
+import { z } from "npm:zod";
 
 type ReportData = z.infer<typeof reportSchema>;
 
