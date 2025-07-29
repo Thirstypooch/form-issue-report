@@ -9,7 +9,7 @@ import { generatePDF } from '../services/pdf.ts';
 // @ts-ignore: Deno environment
 import { supabase } from '../services/supabase.ts';
 // @ts-ignore: Deno environment
-import { z } from "zod"; // Needed for Zod operations
+import { z } from "npm:zod"; // Needed for Zod operations
 // @ts-ignore: Deno environment
 import { reportSchema } from "../utils/validation.ts"; // The original schema from validation.ts
 
