@@ -8,13 +8,17 @@
     "@aws-sdk/client-s3": "npm:@aws-sdk/client-s3",
     "pdf-lib": "https://cdn.skypack.dev/pdf-lib@1.17.1?dts",
     "s3-request-presigner": "npm:@aws-sdk/s3-request-presigner@^3.525.0",
-    "@google-cloud/pubsub": "npm:@google-cloud/pubsub@^4.0.0",
+    "google_auth": "npm:google-auth-library",
     "std/": "https://deno.land/std@0.220.0/",
-    "std/node/": "https://deno.land/std@0.177.0/node/"
+    "std/node/": "https://deno.land/std@0.177.0/node/",
+    "grpc-basic": "https://deno.land/x/grpc_basic@0.4.6/client.ts",
+    "grpc-server": "https://deno.land/x/grpc_basic@0.4.6/server.ts",
+    "pb-util": "https://deno.land/x/grpc_basic@0.4.6/utils/types.ts",
+    "google-protobuf": "npm:google-protobuf@^3.21.2"
   },
   "tasks": {
     "start": "deno serve --allow-net --allow-env --allow-read --allow-write --allow-import --allow-sys src/routes/reports.ts",
-    "dev": "deno serve --watch --allow-net --allow-env --allow-read --allow-write --allow-import --allow-sys src/routes/reports.ts"
+    "dev": "deno serve --port=8001 --watch --allow-net --allow-env --allow-read --allow-write --allow-import --allow-sys src/routes/reports.ts"
   },
   "compilerOptions": {
     "jsx": "precompile",

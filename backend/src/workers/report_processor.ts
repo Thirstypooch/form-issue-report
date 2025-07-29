@@ -15,9 +15,9 @@ import { reportSchema } from "../utils/validation.ts"; // The original schema fr
 
 
 const pubSubPayloadSchema = reportSchema.extend({
-  screenshots: z.any().optional().transform(() => undefined),
-  report_id: z.string().uuid(),
-  file_urls: z.array(z.string().url()).optional(),
+  report_id: z.string().uuid({ message: "Invalid report ID format" })
+}).omit({
+  pdf_url: true
 });
 
 type ReportPayloadFromPubSub = z.infer<typeof pubSubPayloadSchema>;
@@ -68,6 +68,6 @@ async function processReportMessage(rawReportPayload: any) {
     throw error;
   }
 }
-
+// @ts-ignore: Deno environment
 subscribeToReports(Deno.env.get('PUBSUB_SUBSCRIPTION_NAME') || 'report-processor-subscription', processReportMessage);
 console.log('[Worker] Report processor started. Waiting for messages...');
