@@ -8,7 +8,7 @@ if (!projectId || !keyFilePath) {
   throw new Error("GCP_PROJECT_ID and GOOGLE_APPLICATION_CREDENTIALS must be set.");
 }
 
-// This function securely generates a new token whenever it's called.
+
 async function getAccessToken(): Promise<string> {
   const keyFileContent = await Deno.readTextFile(keyFilePath);
   const keyData = JSON.parse(keyFileContent);
@@ -78,7 +78,6 @@ export async function subscribeToReports(subscriptionName: string, messageHandle
   // eslint-disable-next-line no-constant-condition
   while (true) {
     try {
-      // Re-enabled the function call for the worker
       const accessToken = await getAccessToken();
       const response = await fetch(pullUrl, {
         method: 'POST',
@@ -101,13 +100,29 @@ export async function subscribeToReports(subscriptionName: string, messageHandle
           await messageHandler(messagePayload);
           ackIds.push(receivedMessage.ackId);
         }
-        const ackUrl = `https://pubsub.googleapis.com/v1/${subscriptionPath}:acknowledge`;
-        const ackToken = await getAccessToken();
-        await fetch(ackUrl, {
-          method: 'POST',
-          headers: { 'Authorization': `Bearer ${ackToken}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ackIds }),
-        });
+
+        // --- MODIFIED SECTION ---
+        // Acknowledge the messages with detailed logging
+        if (ackIds.length > 0) {
+          console.log(`[Worker] Acknowledging ${ackIds.length} message(s):`, ackIds);
+          const ackUrl = `https://pubsub.googleapis.com/v1/${subscriptionPath}:acknowledge`;
+          const ackToken = await getAccessToken();
+
+          const ackResponse = await fetch(ackUrl, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${ackToken}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ackIds }),
+          });
+
+          if (!ackResponse.ok) {
+            const errorBody = await ackResponse.text();
+            console.error(`[Worker] Failed to acknowledge messages. Status: ${ackResponse.status}`, errorBody);
+          } else {
+            console.log('[Worker] Messages acknowledged successfully.');
+          }
+        }
+        // --- END OF MODIFIED SECTION ---
+
       } else {
         await new Promise(resolve => setTimeout(resolve, 2000));
       }
