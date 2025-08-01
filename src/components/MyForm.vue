@@ -106,6 +106,7 @@ export default defineComponent({
       actualBehavior: ''
     })
     const additionalInfo = reactive({
+      userEmail: '',
       severityLevel: '',
       hasPreviouslyOccurred: '',
       additionalComments: '',
@@ -212,6 +213,7 @@ export default defineComponent({
         reportStatus.value = 'Submitting report details...'
         const formData = new FormData()
         const keyMapping = {
+          userEmail: 'user_email',
           deviceType: 'device_type',
           deviceModel: 'device_model',
           operatingSystem: 'operating_system',

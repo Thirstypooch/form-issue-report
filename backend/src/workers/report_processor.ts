@@ -11,7 +11,9 @@ import { supabase } from '../services/supabase.ts';
 // @ts-ignore: Deno environment
 import { z } from "npm:zod"; // Needed for Zod operations
 // @ts-ignore: Deno environment
-import { reportSchema } from "../utils/validation.ts"; // The original schema from validation.ts
+import { reportSchema } from "../utils/validation.ts";
+// @ts-ignore: Deno environment
+import { sendReportEmail } from '../services/email.ts';
 
 
 const pubSubPayloadSchema = reportSchema.extend({
@@ -29,13 +31,15 @@ async function processReportMessage(rawReportPayload: any) {
   try {
     const validationResult = pubSubPayloadSchema.safeParse(rawReportPayload);
 
+    // 1. First, check if validation was successful
     if (!validationResult.success) {
       console.error(`[Worker] Invalid Pub/Sub message schema for report ID ${reportId}:`, validationResult.error.errors);
       throw new Error(`Invalid message payload for report ID ${reportId}: ${JSON.stringify(validationResult.error.errors)}`);
     }
 
+    // 2. Now that validation passed, declare your variables ONCE
     const validatedPayload: ReportPayloadFromPubSub = validationResult.data;
-    const { report_id, file_urls, ...coreReportData } = validatedPayload;
+    const { report_id, file_urls, user_email, ...coreReportData } = validatedPayload;
 
     if (coreReportData.incident_date) {
       try {
@@ -48,8 +52,10 @@ async function processReportMessage(rawReportPayload: any) {
     const pdfBuffer = await generatePDF(coreReportData);
     const pdfS3Url = await uploadToS3(new File([pdfBuffer], `${report_id}-report.pdf`, { type: 'application/pdf' }));
     console.log(`[Worker] PDF generated and uploaded to S3 for report ID ${report_id}: ${pdfS3Url}`);
+
     const payloadForSupabase = {
       ...coreReportData,
+      user_email: user_email,
       report_id: report_id,
       file_urls: file_urls,
       pdf_url: pdfS3Url,
@@ -63,6 +69,15 @@ async function processReportMessage(rawReportPayload: any) {
     }
 
     console.log(`[Worker] Report ID ${report_id} processed and saved successfully to Supabase.`);
+
+    if (user_email) {
+      await sendReportEmail({
+        to: user_email,
+        reportId: report_id,
+        pdfUrl: pdfS3Url
+      });
+    }
+
   } catch (error) {
     console.error(`[Worker] Fatal error processing report ID: ${reportId}`, error);
     throw error;

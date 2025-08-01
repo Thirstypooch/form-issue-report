@@ -1,6 +1,17 @@
 <template>
   <div class="space-y-8">
     <div class="flex flex-col">
+      <label class="mb-2" for="userEmail">Your Email Address (for confirmation)</label>
+      <input
+        class="rounded-[3.5px] px-[10.5px] py-[5.25px] text-gray-900"
+        type="email"
+        id="userEmail"
+        v-model="additionalInfo.userEmail"
+        placeholder="you@example.com"
+        required
+      />
+    </div>
+    <div class="flex flex-col">
       <label class="mb-2" for="severityLevel">Severity level</label>
       <select
         id="severityLevel"
@@ -57,6 +68,7 @@ export default defineComponent({
   props: {
     modelValue: {
       type: Object as PropType<{
+        userEmail: string;
         severityLevel: string
         hasPreviouslyOccurred: string
         additionalComments: string
@@ -68,6 +80,7 @@ export default defineComponent({
   emits: ['update:modelValue'],
   setup(props, { emit }) {
     const additionalInfo = reactive({
+      userEmail: props.modelValue.userEmail || '',
       severityLevel: props.modelValue.severityLevel || '',
       hasPreviouslyOccurred: props.modelValue.hasPreviouslyOccurred || '',
       additionalComments: props.modelValue.additionalComments || '',
@@ -89,6 +102,7 @@ export default defineComponent({
 
 
     watch(() => props.modelValue, (newValue) => {
+      additionalInfo.userEmail = newValue.userEmail || ''
       additionalInfo.severityLevel = newValue.severityLevel || ''
       additionalInfo.hasPreviouslyOccurred = newValue.hasPreviouslyOccurred || ''
       additionalInfo.additionalComments = newValue.additionalComments || ''

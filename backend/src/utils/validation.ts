@@ -2,6 +2,7 @@
 import { z } from 'npm:zod'
 
 export const reportSchema = z.object({
+  user_email: z.string().email({ message: "Invalid email address." }),
   device_type: z.string(),
   device_model: z.string(),
   operating_system: z.string(),
@@ -9,11 +10,10 @@ export const reportSchema = z.object({
   app_version: z.string(),
   incident_date: z.string().refine(
     (val) => {
-      // Accept both YYYY-MM-DD and ISO 8601
       return /^\d{4}-\d{2}-\d{2}$/.test(val) || !isNaN(Date.parse(val))
     },
     {
-      message: 'Invalid date format. Please use YYYY-MM-DD or ISO 8601 format.'
+      message: 'Invalid date format. Please use YYYY-MM-DD.'
     }
   ),
   problem_description: z.string(),
