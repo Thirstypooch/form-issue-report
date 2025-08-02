@@ -24,22 +24,17 @@ const app = new Hono<AppEnv>();
 
 const allowedOrigins = [
   'http://localhost:5173',
-  // @ts-ignore: Deno environment
-  Deno.env.get('URL'),
-  Deno.env.get('DEPLOY_PRIME_URL')
-].filter(Boolean) as string[];
+];
+
+const frontendUrl = Deno.env.get('FRONTEND_URL');
+if (frontendUrl) {
+  allowedOrigins.push(frontendUrl);
+}
 
 app.use('/*', cors({
-  origin: (origin, _c) => {
-    if (allowedOrigins.includes(origin)) {
-      return origin;
-    }
-    return allowedOrigins[0];
-  },
+  origin: allowedOrigins,
   allowMethods: ['POST', 'GET', 'OPTIONS'],
   allowHeaders: ['Content-Type'],
-  exposeHeaders: ['Content-Length'],
-  maxAge: 600,
   credentials: true,
 }));
 
