@@ -48,7 +48,7 @@
     </form>
 
     <div v-if="reportId" class="mt-4 p-4 bg-gray-700 rounded-md text-white">
-      <p>Report Submitted! Your tracking ID is: <strong>{{ reportId }}</strong></p>
+      <p>Report Submitted! Your tracking ID is: <strong>{{ reportId }} <br> A copy of your issue has been sent to the email you provided us.</strong></p>
       <p>Status: {{ reportStatus }}</p>
     </div>
   </div>
