@@ -6,17 +6,3 @@
 command = "npm run build"
 # The directory that contains the built frontend site
 publish = "dist"
-
-# [functions] settings tell Netlify about your Deno backend
-[functions]
-# The directory where your Deno serverless functions are located
-directory = "backend/src/routes"
-# This specifies to use the Deno runtime for functions in this directory
-deno_import_map = "backend/deno.json"
-
-# [[redirects]] configures routing and proxying
-[[redirects]]
-# Proxy all API requests to our backend function
-from = "/api/*"
-to = "/.netlify/functions/reports"
-status = 200
