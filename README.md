@@ -2,20 +2,16 @@
 
 ## Overview
 
-The Issue Reporting Portal is a sophisticated web application designed to streamline the process of reporting and tracking software issues. Built with modern technologies and a user-centric approach, this platform enables users to submit detailed reports about problems they encounter, helping development teams identify, prioritize, and resolve issues efficiently.
-
+The Issue Reporting Portal is a sophisticated, full-stack web application designed to streamline the process of reporting and tracking software issues. Built with a modern, decoupled architecture, this platform enables users to submit detailed reports through an intuitive interface. The backend leverages an asynchronous, queue-based processing system to handle submissions efficiently, generate PDF summaries, and notify users via email, ensuring a robust and scalable solution.
 ## Features
 
-- **Intuitive User Interface**: A sleek, responsive design with smooth animations and clear navigation
-- **Comprehensive Reporting Form**: Collect detailed information about issues, including:
-  - Device information (type, model, OS, app version)
-  - Incident details (date, description)
-  - Problem analysis (reproduction steps, expected vs. actual behavior)
-  - Additional context (severity, frequency, comments)
-  - Screenshot uploads for visual evidence
-- **Backend Processing**: Secure handling of submitted reports with data validation
-- **PDF Generation**: Automatic creation of formatted PDF reports
-- **Cloud Storage**: Reliable storage of reports and associated files
+- **Intuitive User Interface**: A sleek, responsive design with smooth animations and clear navigation.
+- **Comprehensive Reporting Form**: Collects detailed information including device specifics, incident details, and problem analysis.
+- **File Uploads**: Supports screenshot and video uploads directly to cloud storage for visual evidence.
+- **Asynchronous Processing**: Utilizes a message queue (Google Cloud Pub/Sub) to process submissions in the background, providing an instantaneous response to the user.
+- **Automatic PDF Generation**: Creates formatted PDF reports from the submitted data.
+- **Email Confirmations**: Automatically sends a confirmation email to the user with their full report attached as a PDF.
+- **Secure Cloud Storage**: Reliably stores all user-uploaded files and generated reports on AWS S3.
 
 ## Screenshots
 
@@ -39,8 +35,12 @@ The Issue Reporting Portal is a sophisticated web application designed to stream
 - **Zod**: TypeScript-first schema validation
 - **AWS S3**: Cloud storage for files and assets
 - **PDF-lib**: PDF generation and manipulation
+- **Asynchronous Messaging: Google Cloud Pub/Sub**: Background job processing
+- **Transactional Emails**: Resend
 
-
+### Deployment & DevOps
+- **Frontend Hosting: Netlify**: Leveraging its Edge Network for global content delivery
+- **Backend Hosting: Fly.io**: Running containerized API and Worker processes via Docker
 
 ## License
 
