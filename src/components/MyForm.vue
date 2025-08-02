@@ -113,12 +113,10 @@ export default defineComponent({
       screenshots: [] as File[]
     })
 
-    // Reactive states for submission status and report ID
     const isSubmitting = ref(false)
     const reportId = ref<string | null>(null)
-    const reportStatus = ref('Pending...') // Placeholder for future real-time status
+    const reportStatus = ref('Pending...')
 
-    // Combine all form sections for submission
     const completeForm = computed<FormData>(() => {
       return {
         ...deviceInfo,
@@ -151,15 +149,16 @@ export default defineComponent({
     }
 
     const handleSubmit = async () => {
+      // @ts-ignore: Deno environment
+      const apiUrl = import.meta.env.VITE_API_BASE_URL || '';
       isSubmitting.value = true
-      reportId.value = null // Reset on new submission
-      reportStatus.value = 'Initiating upload...' // Reset status
+      reportId.value = null
+      reportStatus.value = 'Initiating upload...'
 
       try {
-        const payload = { ...completeForm.value }; // Copy form data to manipulate
+        const payload = { ...completeForm.value };
         const uploadedFileUrls: string[] = [];
 
-        // --- Step 1: Validate files and get pre-signed URLs for direct S3 upload ---
         if (payload.screenshots && payload.screenshots.length > 0) {
           for (const file of payload.screenshots) {
             const error = validateFile(file);
@@ -169,10 +168,8 @@ export default defineComponent({
               return;
             }
 
-            // Request a pre-signed URL from your backend for each file
-            // This new endpoint needs to be created on the backend
             reportStatus.value = `Requesting upload URL for ${file.name}...`
-            const presignedUrlResponse = await fetch('/api/presigned-url', { // NEW BACKEND ENDPOINT
+            const presignedUrlResponse = await fetch(`${apiUrl}/presigned-url`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json'
@@ -180,7 +177,7 @@ export default defineComponent({
               body: JSON.stringify({
                 fileName: file.name,
                 fileType: file.type,
-                reportId: 'temp-placeholder' // We don't have the final reportId yet, backend might generate one or add a UUID suffix
+                reportId: 'temp-placeholder'
               })
             });
 
@@ -190,26 +187,24 @@ export default defineComponent({
             }
             const { url: presignedUrl, s3ObjectUrl } = await presignedUrlResponse.json();
 
-            // --- Step 2: Upload file directly to S3 using the pre-signed URL ---
+
             reportStatus.value = `Uploading ${file.name} to S3...`
             const uploadResponse = await fetch(presignedUrl, {
-              method: 'PUT', // Often PUT for pre-signed URLs
+              method: 'PUT',
               headers: {
                 'Content-Type': file.type,
-                // 'Content-Encoding': 'gzip' // Only if you gzipped it client-side
               },
-              body: file // Send the raw File object directly
+              body: file
             });
 
             if (!uploadResponse.ok) {
               throw new Error(`Failed to upload file ${file.name} to S3.`);
             }
-            uploadedFileUrls.push(s3ObjectUrl); // Store the final public S3 URL
+            uploadedFileUrls.push(s3ObjectUrl);
             console.log(`Uploaded ${file.name} to S3: ${s3ObjectUrl}`);
           }
         }
 
-        // --- Step 3: Prepare and send the main form data (without raw files) to the backend ---
         reportStatus.value = 'Submitting report details...'
         const formData = new FormData()
         const keyMapping = {
@@ -227,12 +222,10 @@ export default defineComponent({
           severityLevel: 'severity_level',
           hasPreviouslyOccurred: 'has_previously_occurred',
           additionalComments: 'additional_comments',
-          // screenshots: 'screenshots' // No longer needed here as raw files are not sent
         }
 
         const snakeCaseData = {} as Record<string, string>
         Object.entries(payload).forEach(([key, value]) => {
-          // Exclude the 'screenshots' File array, we're sending URLs instead
           if (key !== 'screenshots') {
             const backendKey = keyMapping[key] || key
             snakeCaseData[backendKey] = value ? String(value) : ''
@@ -244,30 +237,25 @@ export default defineComponent({
           snakeCaseData['incident_date'] = formatISO(dateObj, { representation: 'date' })
         }
 
-        // Append all snake_case data to FormData
+
         Object.entries(snakeCaseData).forEach(([key, value]) => {
           formData.append(key, value)
         })
 
-        // Add the S3 file URLs to the formData instead of the raw files
         uploadedFileUrls.forEach((url) => {
-          formData.append('file_urls[]', url); // Use 'file_urls[]' to send as an array
+          formData.append('file_urls[]', url);
         });
-        // Note: The backend's `reportSchema` will need to be updated to expect `file_urls`
-        // instead of `screenshots` for the main form submission (if you want to strictly validate).
-        // For now, the backend `reports.ts` will receive `file_urls[]` from here,
-        // which matches the Pub/Sub payload for `file_urls`.
+
         const submissionPayload = {
           ...snakeCaseData,
-          file_urls: uploadedFileUrls // Add the S3 file URLs
+          file_urls: uploadedFileUrls
         }
         console.log('Submitting main form data to backend with S3 URLs:', submissionPayload)
         formData.forEach((value, key) => {
           console.log('FormData:', key, value)
         })
 
-        // Changed target to /api/reports as backend `reports.ts` is now simplified
-        const response = await fetch('/api/reports', {
+        const response = await fetch(`${apiUrl}/reports`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
@@ -295,8 +283,8 @@ export default defineComponent({
 
         console.log('Success:', result)
         alert('Report submitted successfully!')
-        reportId.value = result.reportId; // Capture the reportId from the backend response
-        reportStatus.value = result.message; // Display the initial status message
+        reportId.value = result.reportId;
+        reportStatus.value = result.message;
 
       } catch (error: any) {
         console.error('Error:', error)
@@ -312,9 +300,9 @@ export default defineComponent({
       problemAnalysis,
       additionalInfo,
       handleSubmit,
-      isSubmitting, // Expose for button disabled state
-      reportId,      // Expose for displaying to user
-      reportStatus   // Expose for displaying status
+      isSubmitting,
+      reportId,
+      reportStatus
     }
   }
 })

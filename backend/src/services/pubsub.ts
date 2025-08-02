@@ -10,6 +10,7 @@ if (!projectId || !keyFilePath) {
 
 
 async function getAccessToken(): Promise<string> {
+  // @ts-ignore: Deno environment
   const keyFileContent = await Deno.readTextFile(keyFilePath);
   const keyData = JSON.parse(keyFileContent);
   const header = { alg: "RS256", typ: "JWT" };

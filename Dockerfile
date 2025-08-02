@@ -12,7 +12,7 @@ COPY backend/deno.json backend/deno.lock ./
 
 # Cache dependencies for both the web server and the worker.
 # This runs only when deno.json or deno.lock changes.
-RUN deno cache --lock=deno.lock --lock-write src/routes/reports.ts src/workers/report_processor.ts
+RUN deno cache --lock=deno.lock src/routes/reports.ts src/workers/report_processor.ts
 
 # Copy the backend source code and the startup script
 COPY backend/ ./
