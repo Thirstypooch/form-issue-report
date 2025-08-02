@@ -95,14 +95,15 @@ export async function subscribeToReports(subscriptionName: string, messageHandle
       if (receivedMessages && receivedMessages.length > 0) {
         const ackIds: string[] = [];
         for (const receivedMessage of receivedMessages) {
-          const messageData = new TextDecoder().decode(base64Decode(receivedMessage.message.data));
-          const messagePayload = JSON.parse(messageData);
-          await messageHandler(messagePayload);
-          ackIds.push(receivedMessage.ackId);
+          try {
+            const messageData = new TextDecoder().decode(base64Decode(receivedMessage.message.data));
+            const messagePayload = JSON.parse(messageData);
+            await messageHandler(messagePayload);
+            ackIds.push(receivedMessage.ackId);
+          } catch (error) {
+            console.error(`[Worker] Poison pill message detected. It will be sent to the DLQ after 5 attempts. Error:`, error);
+          }
         }
-
-        // --- MODIFIED SECTION ---
-        // Acknowledge the messages with detailed logging
         if (ackIds.length > 0) {
           console.log(`[Worker] Acknowledging ${ackIds.length} message(s):`, ackIds);
           const ackUrl = `https://pubsub.googleapis.com/v1/${subscriptionPath}:acknowledge`;
@@ -118,11 +119,9 @@ export async function subscribeToReports(subscriptionName: string, messageHandle
             const errorBody = await ackResponse.text();
             console.error(`[Worker] Failed to acknowledge messages. Status: ${ackResponse.status}`, errorBody);
           } else {
-            console.log('[Worker] Messages acknowledged successfully.');
+            console.log(`[Worker]  ${ackIds.length} Messages acknowledged successfully.`);
           }
         }
-        // --- END OF MODIFIED SECTION ---
-
       } else {
         await new Promise(resolve => setTimeout(resolve, 2000));
       }

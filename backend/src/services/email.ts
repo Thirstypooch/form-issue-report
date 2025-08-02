@@ -1,6 +1,6 @@
 // @ts-ignore: Deno environment
 import "https://deno.land/std@0.224.0/dotenv/load.ts";
-
+// @ts-ignore: Deno environment
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
 const RESEND_API_URL = 'https://api.resend.com/emails';
 
@@ -17,7 +17,7 @@ export async function sendReportEmail({ to, reportId, pdfUrl }: EmailOptions): P
   }
 
   const payload = {
-    from: 'Bug Reports <reports@thirstypooch.dynv6.net>',
+    from: 'Report Confirmation <reports@thirstypooch.dynv6.net>',
     to: [to],
     subject: `Report Confirmation - ID: ${reportId}`,
     html: `

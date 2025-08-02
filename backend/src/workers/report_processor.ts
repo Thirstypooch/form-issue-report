@@ -31,7 +31,6 @@ async function processReportMessage(rawReportPayload: any) {
   try {
     const validationResult = pubSubPayloadSchema.safeParse(rawReportPayload);
 
-    // 1. First, check if validation was successful
     if (!validationResult.success) {
       console.error(`[Worker] Invalid Pub/Sub message schema for report ID ${reportId}:`, validationResult.error.errors);
       throw new Error(`Invalid message payload for report ID ${reportId}: ${JSON.stringify(validationResult.error.errors)}`);
